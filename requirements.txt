@@ -1,0 +1,6 @@
+# UHV-SEM Energetic Spectrum app — runtime dependencies
+PySide6>=6.6
+pyqtgraph>=0.13
+numpy>=1.24
+Pillow>=10.0
+watchdog>=3.0
