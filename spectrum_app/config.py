@@ -37,7 +37,19 @@ class AcquisitionConfig:
     x_axis: str = "bias"          # "bias" | "index" | "time"
     bias_start: float = 0.0        # volts
     bias_step: float = 1.0         # volts per new scan
+    bias_stop: Optional[float] = None  # volts; end of sweep (None = open-ended)
     settle_seconds: float = 0.0    # ignore this long after a file appears (settling)
+
+    # power supply (EA PS 2000). When driving, each new scan advances the bias.
+    com_port: str = "Auto"         # "Auto" = scan ports; else e.g. "COM6"
+    drive_supply: bool = True      # actively command the supply during a bias sweep
+    current_limit: float = 0.1     # Iset, amps
+    ovp: float = 0.0               # over-voltage protection, volts
+    ocp: float = 0.0               # over-current protection, amps
+
+    # test mode: no scan folder; step the bias on a timer instead of per-scan.
+    test_mode: bool = False
+    test_interval: float = 2.0     # seconds between bias steps in test mode
 
     # file handling
     stability_checks: int = 3      # times the file size must be unchanged

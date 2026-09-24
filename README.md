@@ -8,12 +8,25 @@ description).
 
 - Window with a **live graph** (pyqtgraph) that draws each new point as a scan
   arrives.
-- **Left control panel**: pick the scan folder, START / STOP watching, set the
-  bias schedule and measurement description, see live statistics.
+- **Left control panel**: connect the power supply, pick the scan folder,
+  START / STOP watching, set the bias sweep, safety limits and measurement
+  description, and see live statistics (including the supply's actual V/I).
+- **Drives the EA PS 2000 power supply** (EA PS 2342-06 B). Connect on `Auto`
+  (the app scans serial ports and picks the one that answers) or type a port
+  like `COM6`. During a bias sweep the app sets the first voltage, and for each
+  new scan it reads the **actual** voltage back, tags the point with it, then
+  advances to the next bias — stopping (and turning the output off) at the
+  configured end voltage.
+- **Output & safety**: current limit, OVP and OCP are pushed to the supply
+  before the output goes live; the output turns ON at START (after a
+  confirmation prompt), and OFF at STOP, at end-of-sweep, and when you close the
+  app. Set voltages are clamped to the supply's nominal range (this unit is
+  positive-only, ~0–42 V).
 - Watches a folder for **new scan images**, waits until each file is fully
   written, averages its brightness (full frame for now), and plots it.
-- Each incoming scan is tagged with a **bias** computed from `bias start` +
-  n x `bias step` (X-axis can also be `index` or `time` while testing).
+- Without a supply (or with X-axis `index` / `time`), it behaves as a passive
+  viewer: bias is the computed `bias start` + n x `bias step` and no hardware is
+  touched.
 - **Save** writes a timestamped folder under `sessions/` containing
   `data.csv`, `meta.json` and `graph.png`. Folders are named from your
   description, e.g. `20260920_141530_platinum_t_400/`.
@@ -54,6 +67,8 @@ spectrum_app/
     folder_watcher.py  watchdog watcher -> new_image(path)
     acquisition.py     controller: new scan -> brightness -> point (+bias)
     storage.py         save CSV / JSON / PNG
+  sources/
+    power_supply.py    thread-safe EA PS 2000 control (eaps2000 wrapper)
   ui/
     main_window.py     assembles + wires everything
     control_panel.py   left panel widgets & signals
@@ -65,12 +80,10 @@ sessions/              saved measurements land here
 
 ## Where the next pieces plug in
 
-- **Power supply (EA PS 2342-06 B)** — the USB port is a real remote-control
-  interface (virtual COM port, EA telegram protocol). Control belongs in
-  `AcquisitionController._apply_bias()`: instead of only computing the bias,
-  it will call `power_supply.set_voltage(v)` before/while the next scan is
-  taken. A standalone `sources/power_supply.py` + a `tools/test_power_supply.py`
-  will be added once the unit is on the bench.
+- **Power supply (EA PS 2342-06 B)** — DONE. Control lives in
+  `spectrum_app/sources/power_supply.py` (a thread-safe wrapper over the
+  `eaps2000` package) and is driven from `AcquisitionController` during the bias
+  sweep. `test.py` in the repo root is a minimal standalone connection check.
 - **UHV-SEM app API** — if the microscope software exposes an API (frame grab
   or the raw detector value), it can replace `FolderWatcher` as the signal
   source by emitting the same "new value" signal. That removes folder-polling
@@ -81,6 +94,8 @@ sessions/              saved measurements land here
 
 - Brightness is full-frame; ROI fields exist in `config.py` but there is no ROI
   picker UI yet.
-- Bias is scheduled, not yet commanded (no hardware control).
+- One scan == one bias step: the app advances the voltage as soon as a scan
+  lands, so take exactly one scan per bias and keep stray files out of the
+  watched folder during a sweep.
 - Screenshot-style brightness assumes the SEM export has auto-contrast/gamma
   turned OFF and detector gain fixed for the whole sweep.

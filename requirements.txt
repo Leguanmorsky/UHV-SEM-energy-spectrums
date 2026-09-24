@@ -4,3 +4,6 @@ pyqtgraph>=0.13
 numpy>=1.24
 Pillow>=10.0
 watchdog>=3.0
+# Power supply control (EA PS 2000). eaps2000 pulls in pyserial, pinned too for clarity.
+eaps2000>=1.2.1
+pyserial>=3.5
